@@ -33,7 +33,7 @@ public:
     MatrixXd Xsig_pred_;
 
     ///* time when the state is true, in us
-    long long time_us_;
+    long time_us_;
 
     ///* Process noise standard deviation longitudinal acceleration in m/s^2
     double std_a_;
@@ -74,10 +74,6 @@ public:
     ///* the current NIS for laser
     double NIS_laser_;
 
-    // previous_timestamp_ helps to calculate the time difference
-    // between current and previous timestamps
-    long long previous_timestamp_;
-
     /**
      * Constructor
      */
@@ -87,6 +83,18 @@ public:
      * Destructor
      */
     virtual ~UKF();
+
+    /**
+     * Init Initializes Unscented Kalman filter
+     */
+    void Init();
+
+    /**
+     * Helper functions
+     */
+    MatrixXd AugmentedSigmaPoints();
+
+    MatrixXd PredictedSigmaPoints(double timdediff);
 
     /**
      * ProcessMeasurement
