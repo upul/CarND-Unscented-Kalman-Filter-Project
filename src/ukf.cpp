@@ -201,11 +201,11 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
      ****************************************************************************/
 
     //compute the time elapsed between the current and previous measurements
-    double delta_t = (meas_package.timestamp_ - time_us_) / 1000000.0;    //delta_t - expressed in seconds
+    double time_delta = (meas_package.timestamp_ - time_us_) / 1000000.0;
     time_us_ = meas_package.timestamp_;
 
     // Updates x_ and P_
-    Prediction(delta_t);
+    Prediction(time_delta);
 
     /*****************************************************************************
      *  Update
@@ -215,6 +215,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
         // Radar updates
         UpdateRadar(meas_package);
     } else {
+        // Lidar updates
         UpdateLidar(meas_package);
     }
 }
@@ -285,9 +286,9 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
     MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
 
     //transform sigma points into measurement space
-    for (int i = 0; i < 2 * n_aug_ + 1; i++) { //2n+1 simga points
+    for (int i = 0; i < 2 * n_aug_ + 1; i++) {
 
-        // extract values for better readibility
+        // extract values for better readability
         double p_x = Xsig_pred_(0, i);
         double p_y = Xsig_pred_(1, i);
 
@@ -389,13 +390,12 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
     //set measurement dimension, radar can measure r, phi, and r_dot
     int n_z = 3;
-    // 3 x 15
     MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
 
     //transform sigma points into measurement space
     for (int i = 0; i < 2 * n_aug_ + 1; i++) {
 
-        // extract values for better readibility
+        // extract values for better readability
         double p_x = Xsig_pred_(0, i);
         double p_y = Xsig_pred_(1, i);
         double v = Xsig_pred_(2, i);
@@ -404,7 +404,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
         double v1 = cos(yaw) * v;
         double v2 = sin(yaw) * v;
 
-        // measurement model (avoid dividing by zero!!)
+        // measurement model
         Zsig(0, i) = sqrt(p_x * p_x + p_y * p_y);    //r
         Zsig(1, i) = atan2(p_y, p_x);                //phi
         if (fabs(sqrt(p_x * p_x + p_y * p_y)) > 0.001) {   //r_dot
@@ -488,7 +488,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     x_ = x_ + K * z_diff;
     P_ = P_ - K * S * K.transpose();
 
-    // Update radar NIS
+    // Update radar
     NIS_radar_ = (meas_package.raw_measurements_ - z_pred).transpose() * S.inverse() *
                  (meas_package.raw_measurements_ - z_pred);
 
