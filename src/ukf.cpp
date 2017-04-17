@@ -39,7 +39,7 @@ UKF::UKF() {
 
     // Weights of sigma points
     weights_ = VectorXd(2 * n_aug_ + 1);
-    weights_.segment(1, 2 * n_aug_).fill(0.5d / (n_aug_ + lambda_));
+    weights_.segment(1, 2 * n_aug_).fill(0.5 / (n_aug_ + lambda_));
     weights_(0) = lambda_ / (lambda_ + n_aug_);
 
     // Process noise standard deviation longitudinal acceleration in m/s^2
@@ -115,6 +115,13 @@ MatrixXd UKF::PredictedSigmaPoints(double timdediff) {
         double yawd = Xsig_aug(4, i);
         double nu_a = Xsig_aug(5, i);
         double nu_yawdd = Xsig_aug(6, i);
+
+        // improve safety
+        if ( fabs(p_x) < 0.001 && fabs(p_y) < 0.001 )
+        {
+            p_x = 0.1;
+            p_y = 0.1;
+        }
 
         //predicted state values
         double px_p, py_p;
@@ -406,7 +413,11 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
         // measurement model
         Zsig(0, i) = sqrt(p_x * p_x + p_y * p_y);    //r
-        Zsig(1, i) = atan2(p_y, p_x);                //phi
+        if (fabs(p_y) > 0.001 && fabs(p_x) > 0.001) {
+            Zsig(1, i) = atan2(p_y, p_x);
+        } else {
+            Zsig(1, i) = 0.0;
+        }                        //phi
         if (fabs(sqrt(p_x * p_x + p_y * p_y)) > 0.001) {   //r_dot
             Zsig(2, i) = (p_x * v1 + p_y * v2) / sqrt(p_x * p_x + p_y * p_y);
         } else {
